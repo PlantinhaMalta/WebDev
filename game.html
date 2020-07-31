@@ -1,0 +1,234 @@
+<!doctype html>
+
+<html>
+    <head>
+        <link rel="stylesheet" href="game_style.css">
+        <meta charset="utf-8"/>
+        <title>Minha Engine</title>
+    </head>
+    <body>
+    <script>
+        //Variáveis do jogo
+        var canvas, ctx, ALTURA, LARGURA, frames = 0, maxPulos = 3, velObst = 20, estadoAtual,score = 0,maxScore,
+
+        estados = {
+            jogar: 0,
+            jogando: 1,
+            perdeu:2
+        },
+
+        floor = {
+            y: 550,
+            altura: 50,
+            cor: "#ffdf70",
+            desenha: function(){
+                ctx.fillStyle = this.cor;
+                ctx.fillRect(0,this.y,LARGURA,this.altura);
+            }
+
+        },
+
+        bloco = {
+            x:50,
+            y:0,
+            altura:50,
+            largura:50,
+            cor:"#ff4e4e",
+            gravidade: 2.5,
+            velocidade: 0,
+            jumpForca: 30,
+            pulos: 0,
+
+            atualiza:function(){
+                this.velocidade += this.gravidade;
+                this.y += this.velocidade;
+                if(this.y > floor.y - this.altura && estadoAtual != estados.perdeu){
+                    this.y = floor.y - this.altura;
+                    this.pulos = 0;
+                    this.velocidade = 0;
+                }
+            },
+
+            pula: function(){
+                if(this.pulos < maxPulos){
+                    this.velocidade = -this.jumpForca;
+                    this.pulos++;
+                }
+            },
+
+            desenha: function(){
+                ctx.fillStyle = this.cor;
+                ctx.fillRect(this.x,this.y,this.largura,this.altura);
+
+            },
+
+            reset: function(){
+                this.bloco.y = 0;
+                this.bloco.velocidade = 0;
+                this.bloco.score = 0;
+            }
+        },
+
+        obstaculos = {
+            _obs: [],
+            _cor: ["#000","#ED2939","#FC6600","#311432"],
+            tempoInsere: 0,
+            
+            
+            insere: function(){
+                this._obs.push({
+                    x: LARGURA,
+                    largura: 50,
+                    altura: 31 + Math.floor(120* Math.random()),
+                    cor: this._cor[Math.floor(4* Math.random())]
+                });
+
+                this.tempoInsere = 10 + Math.floor(100*Math.random()*Math.random());
+
+            },
+
+            atualiza: function(){
+                if(this.tempoInsere == 0){
+                    this.insere();
+                }else{
+                    this.tempoInsere--;
+                }
+
+
+                for(var i = 0, tam = this._obs.length; i < tam; i++){
+                    var obs = this._obs[i];
+                    obs.x -= velObst;
+                    if(bloco.x + bloco.largura >= obs.x && bloco.x < obs.x + obs.largura && bloco.y + bloco.altura >= floor.y - obs.altura){
+                            estadoAtual = estados.perdeu;
+
+                    }
+                    
+                    else if(obs.x < bloco.x){
+                        bloco.score++;
+                    }
+
+                    else if(obs.x <= -obs.largura){
+                        this._obs.splice(i,1);
+                        tam--;
+                        i--;
+                    }
+                    
+                }
+            
+
+            },
+
+            limpa: function(){
+                this._obs = [];
+            },
+
+            desenha: function(){
+                for(var i = 0, tam = this._obs.length; i < tam; i++){
+                    var obs = this._obs[i];
+                    ctx.fillStyle = obs.cor;
+                    ctx.fillRect(obs.x, floor.y - obs.altura, obs.largura,obs.altura);
+                }
+            }
+
+            
+
+        };
+
+
+
+        function clique(evento){
+        if(estadoAtual == estados.jogando){
+            bloco.pula();
+        }
+
+        else if(estadoAtual == estados.jogar){
+            estadoAtual = estados.jogando;
+        }
+
+        else if(estadoAtual == estados.perdeu){
+            estadoAtual = estados.jogar;
+            obstaculos.limpa();
+            bloco.reset();
+        }
+
+            
+        }
+
+        function main(){
+            ALTURA = window.innerHeight;
+            LARGURA = window.innerWidth;
+
+            if(LARGURA >= 500){
+                LARGURA = 600;
+                ALTURA = 600;
+            }
+
+            canvas = document.createElement("canvas");
+            canvas.width = LARGURA;
+            canvas.height = ALTURA;
+            canvas.style.border = "1px solid #000";
+
+            ctx = canvas.getContext("2d");
+            document.body.appendChild(canvas);
+            document.addEventListener("mousedown",clique);
+
+            estadoAtual = estados.jogar;
+
+            roda();
+
+        }
+
+        function roda(){
+            att();
+            desenha();
+
+            window.requestAnimationFrame(roda);
+        }
+
+        function att(){
+            frames++;
+            bloco.atualiza();
+            if(estadoAtual == estados.jogando){
+                obstaculos.atualiza();
+            }
+            
+        }
+
+        function desenha(){
+            ctx.fillStyle = "#50beff";
+            ctx.fillRect(0,0,LARGURA,ALTURA);
+
+            ctx.fillStyle = "#fff;"
+            ctx.font = "50px Arial";
+            ctx.fillText(bloco.score, 0,38);
+
+            if(estadoAtual == estados.jogar){
+                ctx.fillStyle = "green";
+                ctx.fillRect(LARGURA/2 - 50,ALTURA/2 - 50,100,100);
+            }else{
+                if(estadoAtual == estados.perdeu){
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(LARGURA/2 - 50,ALTURA/2 - 50,100,100);
+                }else{
+                    if(estadoAtual == estados.jogando){
+
+                        obstaculos.desenha();
+
+                    }
+                }
+            }
+
+            floor.desenha();
+    
+            bloco.desenha();
+        }
+
+
+        //inicializa o jogo
+        main();
+    </script>
+
+    </body>
+
+
+</html>
